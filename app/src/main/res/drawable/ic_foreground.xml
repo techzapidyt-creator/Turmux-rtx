@@ -1,0 +1,39 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:height="108dp"
+    android:width="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Terminal prompt chevron. -->
+    <path
+        android:fillColor="#FF00FF9C"
+        android:pathData="M34,38
+                          h7
+                          l13,16
+                          l-13,16
+                          h-7
+                          l13,-16
+                          z"
+        />
+
+    <!-- Cursor block. -->
+    <path
+        android:fillColor="#FF00FF9C"
+        android:pathData="M58,61
+                          h18
+                          v6
+                          h-18
+                          z"
+        />
+
+    <!-- Accent underscore. -->
+    <path
+        android:fillColor="#FF00C853"
+        android:pathData="M34,70
+                          h12
+                          v3
+                          h-12
+                          z"
+        />
+
+</vector>

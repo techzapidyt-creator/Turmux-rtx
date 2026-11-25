@@ -1,8 +1,9 @@
-name: Android APK Build
+name: Build Turmux RTX APK
 
 on:
   push:
     branches: [ "main", "master" ]
+  pull_request:
   workflow_dispatch:
 
 jobs:
@@ -10,43 +11,48 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    # 2026 के नियमों के अनुसार नवीनतम चेकआउट टूल
-    - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-    - name: Unzip Project Files Properly
-      run: |
-        unzip -o termux-app-master.zip
-        # सटीक फ़ोल्डर स्ट्रक्चर ढूँढकर फाइलों को बाहर निकालना
-        TARGET_DIR=$(find . -maxdepth 2 -type d -name "termux-app-master" | head -n 1)
-        if [ ! -z "$TARGET_DIR" ]; then
-          echo "Found project folder at $TARGET_DIR, moving files..."
-          mv $TARGET_DIR/* . 2>/dev/null || true
-          mv $TARGET_DIR/.[!.]* . 2>/dev/null || true
-        fi
+      # Gradle 9 + AGP 8.13 need JDK 17.
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
 
-    # नवीनतम जावा 17 सेटअप गाइडलाइंस के अनुसार v5 का उपयोग
-    - name: set up JDK 17
-      uses: actions/setup-java@v5
-      with:
-        java-version: '17'
-        distribution: 'temurin'
-        cache: gradle
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
 
-    - name: Grant execute permission for gradlew
-      run: |
-        find . -name "gradlew" -exec chmod +x {} \;
-        # सुनिश्चित करें कि ग्रैडलर रूट पर मौजूद हो
-        LOCAL_GRADLEW=$(find . -name "gradlew" | head -n 1)
-        if [ "$LOCAL_GRADLEW" != "./gradlew" ]; then
-          cp $LOCAL_GRADLEW ./ 2>/dev/null || true
-        fi
+      - name: Install NDK and platform packages
+        run: |
+          sdkmanager --install \
+            "platforms;android-36" \
+            "build-tools;36.0.0" \
+            "ndk;29.0.14206865"
 
-    - name: Build with Gradle
-      run: ./gradlew assembleDebug --no-daemon
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
 
-    - name: Upload APK Artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: Custom-Termux-APK
-        path: "**/build/outputs/apk/debug/*.apk"
-        
+      # Signed, installable release APKs (universal plus a small per-ABI APK for each CPU type).
+      - name: Build release APK
+        run: ./gradlew assembleRelease --no-daemon --stacktrace
+        env:
+          TERMUX_SPLIT_APKS_FOR_RELEASE_BUILDS: "1"
+
+      - name: Build debug APK
+        run: ./gradlew assembleDebug --no-daemon --stacktrace
+
+      - name: Collect APKs
+        run: |
+          mkdir -p dist
+          cp app/build/outputs/apk/release/*.apk dist/
+          cp app/build/outputs/apk/debug/*universal*.apk dist/
+          cd dist && sha256sum *.apk > SHA256SUMS.txt && ls -lh
+
+      - name: Upload APKs
+        uses: actions/upload-artifact@v4
+        with:
+          name: TurmuxRTX-APK
+          path: dist/*.apk
+          if-no-files-found: error

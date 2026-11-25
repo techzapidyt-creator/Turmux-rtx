@@ -1,0 +1,25 @@
+# Gradle
+.gradle/
+build/
+*/build/
+
+# Local SDK configuration
+local.properties
+
+# Portable toolchain used for local builds
+.toolchain/
+
+# Bootstrap archives downloaded by the build
+app/src/main/cpp/bootstrap-*.zip
+
+# Native build
+.cxx/
+externalNativeBuild/
+
+# IDE
+.idea/
+*.iml
+
+# OS
+.DS_Store
+dist/
